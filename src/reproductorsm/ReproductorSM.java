@@ -50,6 +50,7 @@ public class ReproductorSM {
    private JPanel mainPanel;
    private JDesktopPane desktop;
    private LienzoToolBar lienzoToolbar;
+   //private LienzoImageToolBar lienzoImageToolbar;
     
    public ReproductorSM(){
 
