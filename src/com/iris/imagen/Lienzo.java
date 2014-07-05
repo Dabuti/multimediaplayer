@@ -56,7 +56,9 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
 
       return null;
     }
-       
+
+    public void removeShapes(){ shapes.clear(); }
+    
     public static Color toColor(String colorStr){
       Color color = Color.black;
       switch(colorStr){
@@ -82,6 +84,10 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
       
       return color;
    }
+
+    public ArrayList<MyShapes> getShapes(){
+       return shapes;
+    }
 
     public void createShape(){
       switch(toolbar.formaSelected()){

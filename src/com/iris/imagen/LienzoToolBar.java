@@ -53,7 +53,7 @@ public class LienzoToolBar extends JPanel {
     private int grosor;
     private int tiporelleno, dirrelleno;
     private int trazo;
-    private JPanel shapesPanel, colorsPanel, trazoPanel;
+    private final JPanel shapesPanel, colorsPanel, trazoPanel;
     private MyButtonGroup shapesGroup;
     private JButton fgcolorBtn, bgcolorBtn;
     private JComboBox trazoBtn;
@@ -119,8 +119,7 @@ public class LienzoToolBar extends JPanel {
         c.gridx = 0;
         c.gridy = 1;
         c.ipady = 0;
-        this.add(trazoPanel, c);
-        
+        this.add(trazoPanel, c);       
     }
     
     public void readSelectedShape(MyShapes shape){
@@ -567,5 +566,4 @@ public class LienzoToolBar extends JPanel {
     
     // Setters NOTA: hay que actualizar los datos de los labels.
     public void setGrosor(int grosor){ this.grosor = grosor; }
-    public void set(int grosor){ this.grosor = grosor; }
 }

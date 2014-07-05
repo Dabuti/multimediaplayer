@@ -7,29 +7,30 @@
 package reproductorsm;
 
 import com.iris.imagen.Lienzo;
+import com.iris.imagen.LienzoImage;
+import com.iris.imagen.LienzoImageToolBar;
 import com.iris.imagen.LienzoToolBar;
-
-import javax.swing.*;
-import javax.swing.UIManager.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
+import java.awt.image.ConvolveOp;
+import java.awt.image.Kernel;
+import java.awt.image.LookupOp;
+import java.awt.image.LookupTable;
+import java.awt.image.RescaleOp;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import javax.swing.UIManager.*;
+import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.image.BufferedImage;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.imageio.ImageIO;
-import java.io.IOException;
-import java.awt.image.RescaleOp;
-import java.awt.image.ConvolveOp;
-import java.awt.image.LookupOp;
-import java.awt.image.AffineTransformOp;
-import java.awt.geom.AffineTransform;
-import java.awt.image.Kernel;
-import java.awt.image.LookupTable;
-import javax.swing.border.Border;
 import javax.swing.plaf.BorderUIResource;
 
 
@@ -50,10 +51,9 @@ public class ReproductorSM {
    private JPanel mainPanel;
    private JDesktopPane desktop;
    private LienzoToolBar lienzoToolbar;
-   //private LienzoImageToolBar lienzoImageToolbar;
+   private LienzoImageToolBar lienzoImageToolbar;
     
    public ReproductorSM(){
-
    }
    
    // Construcción del panel principal.
@@ -65,8 +65,10 @@ public class ReproductorSM {
       
       // Añadir barras de herramientas al panel izquierdo
       lienzoToolbar = new LienzoToolBar();
-      //lienzoImageToolbar = new LienzoImageToolBar();
+      lienzoImageToolbar = new LienzoImageToolBar(desktop);
+      
       leftPanel.add(lienzoToolbar);
+      leftPanel.add(lienzoImageToolbar);
       
       mainPanel.setLayout(new BorderLayout());
       mainPanel.setPreferredSize(new Dimension(1366, 768));
@@ -94,6 +96,7 @@ public class ReproductorSM {
 
       // Items
       JMenuItem itemNuevo = new JMenuItem("Nuevo");
+      JMenuItem itemAbrir = new JMenuItem("Abrir imagen");
 
       // MenuBar
       menuBar.add(menuArchivo);
@@ -102,6 +105,7 @@ public class ReproductorSM {
 
       // Menu Archivo
       menuArchivo.add(itemNuevo);
+      menuArchivo.add(itemAbrir);
 
       // Set menu items listeners.
       // Item Nuevo
@@ -122,7 +126,46 @@ public class ReproductorSM {
                 desktop.add(intf);
             }
       });
+      
+      // Item Prueba 
+      itemAbrir.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent evt){
+               JFileChooser chooser = new JFileChooser();
+               FileNameExtensionFilter filter;
+               filter = new FileNameExtensionFilter("JPG/GIF/BMP/PNG Images",
+                                                    "jpg", "gif", "bmp", "png");
 
+               chooser.setFileFilter(filter);
+               int resp = chooser.showOpenDialog(frame);
+               File imgfile = null;
+
+               if (resp == JFileChooser.APPROVE_OPTION){
+                  imgfile = chooser.getSelectedFile();
+               }
+
+               try{
+                  BufferedImage img = ImageIO.read(imgfile);
+                  LienzoImage li = new LienzoImage(img);
+                  li.setToolBar(lienzoToolbar);
+                  
+                  // Crear internal frame 
+                  JInternalFrame intf = new JInternalFrame("Nombre Imagen", 
+                        true,  //resizable
+                        true,  //closable
+                        true,  //maximizable
+                        true); //iconifiable
+                
+                  intf.setContentPane(li);
+                  intf.setVisible(true);
+                  intf.setPreferredSize(new Dimension(400, 350));
+                  intf.pack();
+                  desktop.add(intf);                
+               }catch(IOException e){
+                  System.out.println(e.getMessage());
+               }
+            }
+      });
+      
       return menuBar;
    }
 
