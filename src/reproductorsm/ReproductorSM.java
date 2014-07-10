@@ -6,32 +6,25 @@
 
 package reproductorsm;
 
-import com.iris.imagen.Lienzo;
 import com.iris.imagen.LienzoImage;
 import com.iris.imagen.LienzoImageToolBar;
 import com.iris.imagen.LienzoToolBar;
+import com.iris.imagen.VentanaInternaImg;
+import com.iris.sonido.LienzoSound;
+import com.iris.sonido.LienzoSoundRecorder;
+import com.iris.video.VentanaInternaVlc;
+import com.sun.jna.Native;
+import com.sun.jna.NativeLibrary;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
-import java.awt.image.ConvolveOp;
-import java.awt.image.Kernel;
-import java.awt.image.LookupOp;
-import java.awt.image.LookupTable;
-import java.awt.image.RescaleOp;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.UIManager.*;
-import javax.swing.border.Border;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.plaf.BorderUIResource;
+import uk.co.caprica.vlcj.binding.LibVlc;
+import uk.co.caprica.vlcj.runtime.RuntimeUtil;
 
 
 /**
@@ -52,6 +45,7 @@ public class ReproductorSM {
    private JDesktopPane desktop;
    private LienzoToolBar lienzoToolbar;
    private LienzoImageToolBar lienzoImageToolbar;
+   private ShortcutToolBar shortcut;
     
    public ReproductorSM(){
    }
@@ -79,7 +73,10 @@ public class ReproductorSM {
               ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
       leftToolbar.setPreferredSize(new Dimension(300,0));
       
-      //mainPanel.add(createToolBar(), BorderLayout.PAGE_START);
+      // Barra de acceso rápido
+      shortcut = new ShortcutToolBar(this);
+      
+      mainPanel.add(shortcut, BorderLayout.PAGE_START);
       mainPanel.add(desktop, BorderLayout.CENTER);
       mainPanel.add(leftToolbar, BorderLayout.LINE_START);
       //mainPanel.add(createFootBar(), BorderLayout.PAGE_END);
@@ -97,6 +94,9 @@ public class ReproductorSM {
       // Items
       JMenuItem itemNuevo = new JMenuItem("Nuevo");
       JMenuItem itemAbrir = new JMenuItem("Abrir imagen");
+      JMenuItem itemSonido = new JMenuItem("Abrir Sonido");
+      JMenuItem itemVideo = new JMenuItem("Abrir Video");
+      JMenuItem itemRec = new JMenuItem("Grabar Sonido");
 
       // MenuBar
       menuBar.add(menuArchivo);
@@ -106,34 +106,58 @@ public class ReproductorSM {
       // Menu Archivo
       menuArchivo.add(itemNuevo);
       menuArchivo.add(itemAbrir);
+      menuArchivo.add(itemSonido);
+      menuArchivo.add(itemVideo);
+      menuArchivo.add(itemRec);
 
       // Set menu items listeners.
       // Item Nuevo
       itemNuevo.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent evt){
-                Lienzo li = new Lienzo(lienzoToolbar);
-                // Crear internal frame
-                JInternalFrame intf = new JInternalFrame("Lienzo Dibujo", 
-                        true,  //resizable
-                        true,  //closable
-                        true,  //maximizable
-                        true); //iconifiable
+                JTextField ancho = new JTextField(5);
+                JTextField alto = new JTextField(5);
+                int w = 0;
+                int h = 0;
+
+                JPanel dimen = new JPanel();
+                dimen.add(new JLabel("Ancho:"));
+                dimen.add(ancho);
+                dimen.add(Box.createHorizontalStrut(15)); // a spacer
+                dimen.add(new JLabel("Alto:"));
+                dimen.add(alto);
+
+                int result = JOptionPane.showConfirmDialog(null, dimen, 
+                         "Introduzca las dimensiones del lienzo", JOptionPane.OK_CANCEL_OPTION);
+                if (result == JOptionPane.OK_OPTION) {
+                    w = Integer.parseInt(ancho.getText());
+                    h = Integer.parseInt(alto.getText());
+                }
                 
-                intf.setContentPane(li);
-                intf.setVisible(true);
-                intf.setPreferredSize(new Dimension(400, 350));
-                intf.pack();
+                if (w < 1 || h < 1){ w=400; h=350; }
+                
+                BufferedImage nueva = new BufferedImage(w,h, BufferedImage.TYPE_INT_RGB);
+                Graphics2D graphics = nueva.createGraphics();
+                graphics.setPaint(Color.white);
+                graphics.fillRect(0, 0, nueva.getWidth(), nueva.getHeight());
+                
+                LienzoImage li = new LienzoImage(nueva);
+                li.setToolBar(lienzoToolbar);
+                
+                // Crear internal frame
+                VentanaInternaImg intf = new VentanaInternaImg(li, "Nueva", w, h);
+                
                 desktop.add(intf);
             }
       });
       
-      // Item Prueba 
+      // Item Prueba imagenes
       itemAbrir.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent evt){
                JFileChooser chooser = new JFileChooser();
                FileNameExtensionFilter filter;
                filter = new FileNameExtensionFilter("JPG/GIF/BMP/PNG Images",
-                                                    "jpg", "gif", "bmp", "png");
+                                                    "jpg", "gif", "bmp", "png"
+                                                    );
 
                chooser.setFileFilter(filter);
                int resp = chooser.showOpenDialog(frame);
@@ -149,21 +173,86 @@ public class ReproductorSM {
                   li.setToolBar(lienzoToolbar);
                   
                   // Crear internal frame 
-                  JInternalFrame intf = new JInternalFrame("Nombre Imagen", 
-                        true,  //resizable
-                        true,  //closable
-                        true,  //maximizable
-                        true); //iconifiable
-                
-                  intf.setContentPane(li);
-                  intf.setVisible(true);
-                  intf.setPreferredSize(new Dimension(400, 350));
-                  intf.pack();
-                  desktop.add(intf);                
+                 VentanaInternaImg intf = new VentanaInternaImg(li, imgfile.getName(), img.getWidth(), img.getHeight());
+                 desktop.add(intf);
+                 
                }catch(IOException e){
                   System.out.println(e.getMessage());
                }
             }
+      });
+      
+      itemSonido.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent evt){
+               JFileChooser chooser = new JFileChooser();
+               FileNameExtensionFilter filter;
+               filter = new FileNameExtensionFilter("WAV/MP3 Files",
+                                                    "wav", "mp3");
+
+               chooser.setFileFilter(filter);
+               int resp = chooser.showOpenDialog(frame);
+               File soundfile = null;
+
+               if (resp == JFileChooser.APPROVE_OPTION){
+                  soundfile = chooser.getSelectedFile();
+               }
+
+               LienzoSound ls = new LienzoSound(soundfile);
+                  
+               // Crear internal frame 
+               JInternalFrame intf = new JInternalFrame("Nombre Sonido", 
+                    true,  //resizable
+                    true,  //closable
+                    true,  //maximizable
+                    true); //iconifiable
+
+                intf.setContentPane(ls);
+                intf.setVisible(true);
+                intf.setPreferredSize(new Dimension(512, 200));
+                intf.pack();
+                desktop.add(intf);                
+            }
+      });
+      
+      itemVideo.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent evt){
+               JFileChooser chooser = new JFileChooser();
+               FileNameExtensionFilter filter;
+               filter = new FileNameExtensionFilter("Videos",
+                                                    "mp4", "avi");
+
+               //chooser.setFileFilter(filter);
+               int resp = chooser.showOpenDialog(frame);
+               File videofile = null;
+
+               if (resp == JFileChooser.APPROVE_OPTION){
+                  videofile = chooser.getSelectedFile();
+               }
+               
+               VentanaInternaVlc vivlc = new VentanaInternaVlc(videofile);
+               desktop.add(vivlc);
+               vivlc.play();
+            }
+      });
+
+      itemRec.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent evt){
+               LienzoSoundRecorder lsr = new LienzoSoundRecorder();
+                  
+               // Crear internal frame 
+               JInternalFrame intf = new JInternalFrame("Grabación Sonido", 
+                    true,  //resizable
+                    true,  //closable
+                    true,  //maximizable
+                    true); //iconifiable
+
+                intf.setContentPane(lsr);
+                intf.setVisible(true);
+                intf.setPreferredSize(new Dimension(250, 200));
+                intf.pack();
+                desktop.add(intf);                 
+            }
+      
       });
       
       return menuBar;
@@ -203,9 +292,15 @@ public class ReproductorSM {
       frame.setVisible(true);
    }
 
+   public JDesktopPane getDesktop(){ return this.desktop; }
+   public LienzoToolBar getLienzoToolBar(){ return this.lienzoToolbar; }
+   
    public static void main(String args[]) {
       EventQueue.invokeLater(new Runnable() {
             public void run() {
+            NativeLibrary.addSearchPath(
+                RuntimeUtil.getLibVlcLibraryName(), "c:/Program Files/VideoLAN/VLC/");
+            Native.loadLibrary(RuntimeUtil.getLibVlcLibraryName(), LibVlc.class);
                createAndShowGUI();
             }
          });

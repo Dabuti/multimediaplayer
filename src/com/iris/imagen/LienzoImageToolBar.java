@@ -7,6 +7,7 @@
 package com.iris.imagen;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -20,6 +21,8 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.awt.image.ConvolveOp;
+import java.awt.image.Kernel;
 import java.awt.image.LookupOp;
 import java.awt.image.LookupTable;
 import java.awt.image.RescaleOp;
@@ -28,13 +31,17 @@ import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JDesktopPane;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import sm.image.KernelProducer;
 import sm.image.LookupTableProducer;
+import sm.image.ThresholdOp;
+
 
 /**
  *
@@ -43,13 +50,16 @@ import sm.image.LookupTableProducer;
 public class LienzoImageToolBar extends JPanel {
     private final JPanel rotPanel, zoomPanel, contPanel, filtPanel, umbPanel;
     public JDesktopPane desktop;
-    public String filtro;
+    public String filtro, tipoUmbral;
+    public Kernel kfiltro;
 
     private JButton btnTest;
 
     public LienzoImageToolBar(JDesktopPane desk) {
         this.desktop = desk;
-        GridBagConstraints c;      
+        GridBagConstraints c;
+        kfiltro = KernelProducer.createKernel(KernelProducer.TYPE_MEDIA_3x3);
+        tipoUmbral = "Grises";
         
         rotPanel = createRotPanel();
         zoomPanel = createZoomPanel();
@@ -59,6 +69,7 @@ public class LienzoImageToolBar extends JPanel {
         
         this.setLayout(new GridBagLayout());
         this.setPreferredSize(new Dimension(300, 200));
+        this.setMinimumSize(new Dimension(300, 200));
         this.setMaximumSize(new Dimension(300, 400));
         this.setBorder(BorderFactory.createTitledBorder("Imagen:"));
 
@@ -205,11 +216,12 @@ public class LienzoImageToolBar extends JPanel {
                      r = Math.toRadians(270);
                      break;
                   }
+                  LienzoImage li = null;
+                  if (desktop.getSelectedFrame() != null && desktop.getSelectedFrame() instanceof VentanaInternaImg){
+                     li = ((VentanaInternaImg) desktop.getSelectedFrame()).getLienzoImage();   
+                  }
 
-                  Container vi = desktop.getSelectedFrame().getContentPane();
-
-                  if (vi instanceof LienzoImage){
-                     LienzoImage li = (LienzoImage) vi;
+                  if (li != null){
                      BufferedImage imgSource = li.getFilteredImageRGB();
                      try{
                         Point p = new Point(imgSource.getWidth()/2, imgSource.getHeight()/2);
@@ -232,24 +244,30 @@ public class LienzoImageToolBar extends JPanel {
         rotationSli.addChangeListener(new ChangeListener(){
             public void stateChanged(ChangeEvent evt){
                int value = ((JSlider) evt.getSource()).getValue();
-               Container vi = desktop.getSelectedFrame().getContentPane();
+               if (desktop.getSelectedFrame() != null && desktop.getSelectedFrame() instanceof VentanaInternaImg){
+                 LienzoImage li = ((VentanaInternaImg) desktop.getSelectedFrame()).getLienzoImage();
 
-               if (vi instanceof LienzoImage){
-                  LienzoImage li = (LienzoImage) vi;
-                  BufferedImage imgSource = li.getImage();
-                  try{
-                     Point p = new Point(imgSource.getWidth()/2, imgSource.getHeight()/2);
-                     AffineTransform at = AffineTransform.getRotateInstance(Math.toRadians(value),
-                                                                            p.x, p.y);
-                     AffineTransformOp atop;
-                     atop = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
-                     BufferedImage imgdest = atop.filter(imgSource, null);
-                     li.setImage(imgdest);
-                     li.repaint();
-                  }catch(IllegalArgumentException e){
-                     System.err.println(e.getLocalizedMessage());
-                  }
-               }
+                 if (li != null){
+                   // Comprobar última transformación
+                   if (!"Rotacion".equals(li.getUltimaTrans())){
+                       li.updateOriginal();
+                       li.setUltimaTrans("Rotacion");
+                   }
+                   BufferedImage imgSource = li.getImage();
+                   try{
+                      Point p = new Point(imgSource.getWidth()/2, imgSource.getHeight()/2);
+                      AffineTransform at = AffineTransform.getRotateInstance(Math.toRadians(value),
+                                                                             p.x, p.y);
+                      AffineTransformOp atop;
+                      atop = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+                      BufferedImage imgdest = atop.filter(imgSource, null);
+                      li.setImage(imgdest);
+                      li.repaint();
+                   }catch(IllegalArgumentException e){
+                      System.err.println(e.getLocalizedMessage());
+                   }
+                }
+             }
             }
          });
         
@@ -281,46 +299,48 @@ public class LienzoImageToolBar extends JPanel {
         // Listeners
         zoomIn.addMouseListener(new MouseAdapter(){
             public void mouseClicked(MouseEvent evt){
-               Container vi = desktop.getSelectedFrame().getContentPane();
+               if (desktop.getSelectedFrame() != null && desktop.getSelectedFrame() instanceof VentanaInternaImg){
+                 LienzoImage li = ((VentanaInternaImg) desktop.getSelectedFrame()).getLienzoImage();
 
-               if (vi instanceof LienzoImage){
-                  LienzoImage li = (LienzoImage) vi;
-                  BufferedImage imgSource = li.getFilteredImageRGB();
-                  try{
-                     Point p = new Point(imgSource.getWidth()/2, imgSource.getHeight()/2);
-                     AffineTransform at = AffineTransform.getScaleInstance(1.25,1.25);
+                 if (li != null){
+                   BufferedImage imgSource = li.getFilteredImageRGB();
+                   try{
+                      Point p = new Point(imgSource.getWidth()/2, imgSource.getHeight()/2);
+                      AffineTransform at = AffineTransform.getScaleInstance(1.25,1.25);
 
-                     AffineTransformOp atop;
-                     atop = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
-                     BufferedImage imgdest = atop.filter(imgSource, null);
-                     li.setImage(imgdest);
-                     li.repaint();
-                  }catch(IllegalArgumentException e){
-                     System.err.println(e.getLocalizedMessage());
-                  }
+                      AffineTransformOp atop;
+                      atop = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+                      BufferedImage imgdest = atop.filter(imgSource, null);
+                      li.setImage(imgdest);
+                      li.repaint();
+                   }catch(IllegalArgumentException e){
+                      System.err.println(e.getLocalizedMessage());
+                   }
+                }
                }
             }
          });
 
         zoomOut.addMouseListener(new MouseAdapter(){
             public void mouseClicked(MouseEvent evt){
-               Container vi = desktop.getSelectedFrame().getContentPane();
+               if (desktop.getSelectedFrame() != null && desktop.getSelectedFrame() instanceof VentanaInternaImg){
+                  LienzoImage li = ((VentanaInternaImg) desktop.getSelectedFrame()).getLienzoImage();
 
-               if (vi instanceof LienzoImage){
-                  LienzoImage li = (LienzoImage) vi;
-                  BufferedImage imgSource = li.getFilteredImageRGB();
-                  try{
-                     Point p = new Point(imgSource.getWidth()/2, imgSource.getHeight()/2);
-                     AffineTransform at = AffineTransform.getScaleInstance(0.75, 0.75);
+                   if (li != null){
+                      BufferedImage imgSource = li.getFilteredImageRGB();
+                      try{
+                         Point p = new Point(imgSource.getWidth()/2, imgSource.getHeight()/2);
+                         AffineTransform at = AffineTransform.getScaleInstance(0.75, 0.75);
 
-                     AffineTransformOp atop;
-                     atop = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
-                     BufferedImage imgdest = atop.filter(imgSource, null);
-                     li.setImage(imgdest);
-                     li.repaint();
-                  }catch(IllegalArgumentException e){
-                     System.err.println(e.getLocalizedMessage());
-                  }
+                         AffineTransformOp atop;
+                         atop = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+                         BufferedImage imgdest = atop.filter(imgSource, null);
+                         li.setImage(imgdest);
+                         li.repaint();
+                      }catch(IllegalArgumentException e){
+                         System.err.println(e.getLocalizedMessage());
+                      }
+                   }
                }
             }
          });
@@ -418,12 +438,11 @@ public class LienzoImageToolBar extends JPanel {
                      break;
                   }
 
-                  Container vi = null;
-                  if (desktop.getSelectedFrame() != null)
-                    vi = desktop.getSelectedFrame().getContentPane();
+                  LienzoImage li = null;
+                  if (desktop.getSelectedFrame() != null && desktop.getSelectedFrame() instanceof VentanaInternaImg)
+                     li = ((VentanaInternaImg) desktop.getSelectedFrame()).getLienzoImage();
 
-                  if (vi instanceof LienzoImage){
-                     LienzoImage li = (LienzoImage) vi;
+                  if (li != null){
                      BufferedImage imgSource = li.getFilteredImageRGB();
                      try{
                         LookupOp lop = new LookupOp(lt, null);
@@ -442,22 +461,28 @@ public class LienzoImageToolBar extends JPanel {
         brilloSli.addChangeListener(new ChangeListener(){
               public void stateChanged(ChangeEvent evt){
                  int value = ((JSlider) evt.getSource()).getValue();
-                 Container vi = desktop.getSelectedFrame().getContentPane();
+                 if (desktop.getSelectedFrame() != null && desktop.getSelectedFrame() instanceof VentanaInternaImg){
+                     LienzoImage li = ((VentanaInternaImg) desktop.getSelectedFrame()).getLienzoImage();
 
-                 if (vi instanceof LienzoImage){
-                    LienzoImage li = (LienzoImage) vi;
-                    BufferedImage imgSource = li.getFilteredImageRGB();
-                    try{
-                       value -= li.getBright();
-                       RescaleOp rop = new RescaleOp(1.0f, (float) value, null);
-                       BufferedImage imgdest = rop.filter(imgSource, null);
-                       li.setImage(imgdest);
-                       li.setBright(((JSlider) evt.getSource()).getValue());
-                       li.repaint();
-                    }catch(IllegalArgumentException e){
-                       System.err.println(e.getLocalizedMessage());
-                    }
-                 }
+                     if (li != null){
+                        // Comprobar última transformación
+                        if (!"Brillo".equals(li.getUltimaTrans())){
+                            li.updateOriginal();
+                            li.setUltimaTrans("Brillo");
+                        }
+                        BufferedImage imgSource = li.getFilteredImageRGB();
+                        try{
+                           value -= li.getBright();
+                           RescaleOp rop = new RescaleOp(1.0f, (float) value, null);
+                           BufferedImage imgdest = rop.filter(imgSource, null);
+                           li.setImage(imgdest);
+                           li.setBright(((JSlider) evt.getSource()).getValue());
+                           li.repaint();
+                        }catch(IllegalArgumentException e){
+                           System.err.println(e.getLocalizedMessage());
+                        }
+                     }
+                  }
               }
            });
         
@@ -481,54 +506,172 @@ public class LienzoImageToolBar extends JPanel {
         panel.add(tipoFiltro);
         panel.add(aplicar);
         
+        // Listeners
+        tipoFiltro.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent evt){
+               JComboBox cb = (JComboBox) evt.getSource();
+               String opcion = (String) cb.getSelectedItem();
+
+               switch(opcion){
+               case "Media":
+                  kfiltro = KernelProducer.createKernel(KernelProducer.TYPE_MEDIA_3x3);
+                  break;
+               case "Binomial":
+                  kfiltro = KernelProducer.createKernel(KernelProducer.TYPE_BINOMIAL_3x3);
+                  break;
+               case "Enfoque":
+                  kfiltro = KernelProducer.createKernel(KernelProducer.TYPE_ENFOQUE_3x3);
+                  break;
+               case "Relieve":
+                  kfiltro = KernelProducer.createKernel(KernelProducer.TYPE_RELIEVE_3x3);
+                  break;
+               case "Laplaciano":
+                  kfiltro = KernelProducer.createKernel(KernelProducer.TYPE_LAPLACIANA_3x3);
+                  break;
+               }
+            }
+        });
+        
+        aplicar.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent evt){
+                 if (desktop.getSelectedFrame() != null && desktop.getSelectedFrame() instanceof VentanaInternaImg){
+                   LienzoImage li = ((VentanaInternaImg) desktop.getSelectedFrame()).getLienzoImage();
+
+                   if (li != null){
+                    // Comprobar última transformación
+                    if (!"Filtro".equals(li.getUltimaTrans())){
+                        li.updateOriginal();
+                        li.setUltimaTrans("Filtro");
+                    }
+                    BufferedImage imgSource = li.getFilteredImage();
+                    try{
+                       ConvolveOp cop = new ConvolveOp(kfiltro);
+                       BufferedImage imgdest = cop.filter(imgSource, null);
+                       li.setImage(imgdest);
+                       li.repaint();
+                    }catch(IllegalArgumentException e){
+                       System.err.println(e.getLocalizedMessage());
+                    }
+                 }
+               }
+            }
+        });
+        
         return panel;
     }
 
     private JPanel createUmbPanel() {
         JPanel panel = new JPanel();
+        GridBagConstraints c;
         String [] filters = {"Grises", "Colores"};
         JComboBox tipoFiltro = new JComboBox(filters);
-        JSlider umbralSli = new JSlider(JSlider.HORIZONTAL, 0, 100, 10);
-        JButton color = new JButton();
+        JSlider umbralSli = new JSlider(JSlider.HORIZONTAL, 0, 255, 10);
+        final JButton color = new JButton();
         color.setBackground(Color.red);
         
         // Atributos panel Umbralizar
-        panel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        panel.setLayout(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Umbralizar:"));
-        panel.setPreferredSize(new Dimension(150,140));
+        panel.setPreferredSize(new Dimension(150,100));
+
+        color.setPreferredSize(new Dimension(24,24));
+        color.setEnabled(false);
+        umbralSli.setPreferredSize(new Dimension(100,20));
         
-        panel.add(tipoFiltro);
-        panel.add(color);
-        panel.add(umbralSli);
+        // Menu tipo de filtro: Color/Grises
+        c = new GridBagConstraints();
+        c.anchor = GridBagConstraints.NORTHWEST;
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weightx = 1;
+        c.weighty = 1;
+        panel.add(tipoFiltro, c);
+        
+        // Botón color umbral
+        c = new GridBagConstraints();
+        c.anchor = GridBagConstraints.NORTHWEST;
+        c.gridx = 1;
+        c.gridy = 0;
+        c.weightx = 1;
+        c.weighty = 1;
+        panel.add(color, c);
+        
+        // Slider umbralización
+        c = new GridBagConstraints();
+        c.anchor = GridBagConstraints.NORTH;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 0;
+        c.gridy = 1;
+        c.weightx = 0;
+        c.gridwidth = 2;
+        panel.add(umbralSli, c);
         
         
         // Listeners:
         // En el combobox activar/desactivar boton color si es color o grises.
-
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        btnTest = new JButton("Test");
-        btnTest.addActionListener(new ActionListener() {
+        tipoFiltro.addActionListener(new ActionListener(){
             @Override
-            public void actionPerformed(ActionEvent ae) {
-                if (desktop.getSelectedFrame() == null)
-                    return;
-                if (desktop.getSelectedFrame().getContentPane() instanceof Lienzo)
-                    System.out.println("Lienzo");
-                if (desktop.getSelectedFrame().getContentPane() instanceof LienzoImage)
-                    System.out.println("LienzoImage");
+            public void actionPerformed(ActionEvent evt){
+               JComboBox cb = (JComboBox) evt.getSource();
+               tipoUmbral = (String) cb.getSelectedItem();
+               if ("Grises".equals(tipoUmbral))
+                   color.setEnabled(false);
+               else
+                   color.setEnabled(true);
             }
         });
         
+        // Botón de selección de color
+        color.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent evt){
+                Color seleccion = null;
+                seleccion = JColorChooser.showDialog(getRootPane(),
+                   "Seleccione color de fondo", Color.red);
+
+                if (seleccion != null){
+                    ((JButton) evt.getSource()).setBackground(seleccion);
+                }
+            }
+        });
+        
+        // Slider de umbral
+        umbralSli.addChangeListener(new ChangeListener(){
+            public void stateChanged(ChangeEvent evt){
+                int value = ((JSlider) evt.getSource()).getValue();
+                if (desktop.getSelectedFrame() != null && desktop.getSelectedFrame() instanceof VentanaInternaImg){
+                 LienzoImage li = ((VentanaInternaImg) desktop.getSelectedFrame()).getLienzoImage();
+
+                 if (li != null){
+                    // Comprobar última transformación
+                    if (!"Umbral".equals(li.getUltimaTrans())){
+                        li.updateOriginal();
+                        li.setUltimaTrans("Umbral");
+                    }
+                    
+                    BufferedImage imgSource = li.getImage();
+                    ThresholdOp top = null;
+                    if ("Grises".equals(tipoUmbral)){
+                       top = new ThresholdOp(value);
+                       top.setType(ThresholdOp.TYPE_GREY_LEVEL);
+                    }else{
+                       top = new ThresholdOp(color.getBackground(), value);
+                       top.setType(ThresholdOp.TYPE_COLOR);
+                    }
+                    try{
+                       BufferedImage imgdest = top.filter(imgSource, null);
+                       li.setImage(imgdest);
+                       li.repaint();
+                    }catch(IllegalArgumentException e){
+                       System.err.println(e.getLocalizedMessage());
+                    }
+                 }
+                }
+            }
+        });
         
         return panel;
     }
-    
 }
