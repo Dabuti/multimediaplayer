@@ -9,6 +9,7 @@ package reproductorsm;
 import com.iris.imagen.LienzoImage;
 import com.iris.imagen.LienzoToolBar;
 import com.iris.imagen.VentanaInternaImg;
+import com.iris.video.VentanaInternaCam;
 import com.iris.video.VentanaInternaVlc;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -54,6 +55,15 @@ public class ShortcutToolBar extends JToolBar{
         boton.setIcon(icono);
         boton.setToolTipText("Webcam");
         
+        // Listener
+        boton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                VentanaInternaCam vic = new VentanaInternaCam();
+                desktop.add(vic);
+                vic.play();
+            }
+        });
         return boton;
     }
     private JButton getBtnSnapshot(){
@@ -77,6 +87,17 @@ public class ShortcutToolBar extends JToolBar{
                     
                     li.setToolBar(litoolbar);
                     desktop.add(viimg);
+                }else{
+                    if (ifr != null && ifr instanceof VentanaInternaCam){
+                        VentanaInternaCam vic = (VentanaInternaCam) ifr;
+                        BufferedImage snapshot = vic.snapshot();
+                        LienzoImage li = new LienzoImage(snapshot);
+                        VentanaInternaImg viimg = new VentanaInternaImg(li, "Nueva Captura", 
+                                snapshot.getWidth(), snapshot.getHeight());
+
+                        li.setToolBar(litoolbar);
+                        desktop.add(viimg);
+                    }
                 }
             }
         });
