@@ -21,16 +21,24 @@ import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
 import uk.co.caprica.vlcj.test.basic.PlayerControlsPanel;
 
 /**
+ * Clase que representa una ventana interna de tipo VLC, esta ventana será usada
+ * para la reproducción de Videos y sonidos complejos.
  *
- * @author 
+ * @author Iris García <a href="mailto:irisgarcia@correo.ugr.es"></a>
  */
 public class VentanaInternaVlc extends JInternalFrame implements InternalFrameListener{
     private final MediaPlayerFactory mediaPlayerFactory;
     private final EmbeddedMediaPlayer player;
     private final PlayerControlsPanel controls;
     private final Canvas videoSurface;
-    private File filename;    
+    private final File filename;    
     
+    /**
+     * Constructor común, que crea una instancia de <code>VentanaInternaVlc</code>.
+     * También crea un objeto reproductor asociado a la ventana interna.
+     * 
+     * @param f <code>File</code> archivo de video o sonido.
+     */
     public VentanaInternaVlc(File f) {
         mediaPlayerFactory = new MediaPlayerFactory();
         player = mediaPlayerFactory.newEmbeddedMediaPlayer();
@@ -60,21 +68,29 @@ public class VentanaInternaVlc extends JInternalFrame implements InternalFrameLi
         this.addInternalFrameListener(this);
     }
     
+    /**
+     * Comienza la reproducción.
+     */
     public void play(){ player.playMedia(this.filename.getAbsolutePath()); }
+    /**
+     * Para la reproducción.
+     */
     public void stop(){ player.stop(); }
+    /**
+     * Crea una captura instantánea.
+     * 
+     * @return <code>BufferedImage</code> captura.
+     */
     public BufferedImage snapshot(){
         return this.player.getSnapshot(videoSurface.getWidth(), videoSurface.getHeight());
     }
 
     @Override
-    public void internalFrameOpened(InternalFrameEvent ife) { System.out.println("Abierto"); }
+    public void internalFrameOpened(InternalFrameEvent ife) { }
     @Override
     public void internalFrameClosing(InternalFrameEvent ife) {
         if (this.player.isPlaying())
             this.player.stop();
-        
-        this.player.release();
-        this.mediaPlayerFactory.release();
     }
     @Override
     public void internalFrameClosed(InternalFrameEvent ife) { }
@@ -82,7 +98,15 @@ public class VentanaInternaVlc extends JInternalFrame implements InternalFrameLi
     @Override
     public void internalFrameIconified(InternalFrameEvent ife) { }
     @Override
-    public void internalFrameDeiconified(InternalFrameEvent ife) {  }
+    public void internalFrameDeiconified(InternalFrameEvent ife) {  
+        // Parar y volver a iniciar el video al maximizar ventana
+        // Motivo: Bug con librería libvlc.
+        float pos = player.getPosition();
+        player.stop();
+        player.playMedia(this.filename.getAbsolutePath());
+        player.setPosition(pos);
+        player.start();
+    }
     @Override
     public void internalFrameActivated(InternalFrameEvent ife) {  }
     @Override

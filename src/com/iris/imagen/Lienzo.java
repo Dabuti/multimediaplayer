@@ -7,7 +7,6 @@
 package com.iris.imagen;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -16,20 +15,28 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
 
 
 /**
- *
- * @author dabuti
+ * Esta clase representa un lienzo de dibujo, que almacena 
+ * formas de tipo MyShape y las dibuja sobrecargando el método
+ * de la clase heradada <i>JPanel</i>. 
+ * 
+ * Contiene la implementación de los listener de Ratón.
+ * 
+ * @author Iris García
  */
 public class Lienzo extends JPanel implements MouseListener, MouseMotionListener{
     private LienzoToolBar toolbar;
     private Point clickPoint, dragFin, lastDrag;
     private MyShapes selectedShape;
     private ArrayList<MyShapes> shapes;
+    private boolean curve_drawing = false;
     
+    /**
+     * Constructor por defecto
+     */
     public Lienzo(){
         selectedShape = null;
         shapes = new ArrayList();
@@ -38,17 +45,38 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
         this.addMouseMotionListener(this);
     }
     
+    /**
+     * Constructor común que asocia un toolbar al lienzo.
+     * 
+     * @param toolbar Objeto LienzoToolBar a asociar.
+     */
     public Lienzo(LienzoToolBar toolbar){
         this();
         this.toolbar = toolbar;
     }
     
+    /**
+     * Asocia un toolbar recibido como argumento al lienzo.
+     * 
+     * @param toolbar Objeto LienzoToolBar a asociar.
+     */
     public void setToolBar(LienzoToolBar toolbar){
         this.toolbar = toolbar;
     }
     
+    /**
+     * Devuelve el toolbar asociado al lienzo.
+     * 
+     * @return LienzoToolBar asociado al lienzo.
+     */
     public LienzoToolBar getToolBar(){ return this.toolbar; }
 
+    /**
+     * Devuelve la forma MyShape que contiene al punto dónde se hizo click.
+     * 
+     * @return Forma MyShape que contiene el punto clickPoint, null si no
+     * es contenido por ninguna forma.
+     */
     public MyShapes getSelectedShape(){ 
         for (MyShapes shape : shapes)
             if (shape.contains(clickPoint))
@@ -57,8 +85,18 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
       return null;
     }
 
+    /**
+     * Elimina todas las formas MyShape del lienzo.
+     */
     public void removeShapes(){ shapes.clear(); }
     
+    /**
+     * Método que crea un objeto de tipo Color a partir de
+     * un String recibido como argumento.
+     * 
+     * @param colorStr Nombre del color a crear.
+     * @return Objeto Color creado.
+     */
     public static Color toColor(String colorStr){
       Color color = Color.black;
       switch(colorStr){
@@ -85,10 +123,19 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
       return color;
    }
 
+    /**
+     * Método que devuelve las formas creadas en el lienzo.
+     * 
+     * @return Colección de formas MyShapes.
+     */
     public ArrayList<MyShapes> getShapes(){
        return shapes;
     }
 
+    /**
+     * Método llamado para crear una forma nueva, la que esté seleccionada en la
+     * barra toolbar.
+     */
     public void createShape(){
       switch(toolbar.formaSelected()){
       case "Punto":
@@ -123,11 +170,24 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
             shapes.add(nuevo);
          }
          break;
+      case "Curva":
+         if (clickPoint != null){
+            MyCurve2D nuevo = new MyCurve2D((double) clickPoint.x, (double) clickPoint.y);
+            setShapeProperties(nuevo); 
+            shapes.add(nuevo);
+            curve_drawing = true;
+         }
+         break;
       }
    }
 
-   // Actualiza las propiedades de una forma con la selección actual.
-   private void setShapeProperties(MyShapes shape){
+    /**
+     * Actualiza los atributos de una forma MyShape recibida como argumento,
+     * con los seleccionados en la barra de herramientas toolbar.
+     * 
+     * @param shape Forma MyShape a actualizar atributos.
+     */
+    private void setShapeProperties(MyShapes shape){
         shape.setfgColor(toolbar.fgcolorSelected());
         shape.setbgColor(toolbar.bgcolorSelected());
         shape.setGrosor(toolbar.getGrosor());
@@ -135,26 +195,43 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
         shape.setFilledType(toolbar.getTipoRelleno());
         shape.setFilledDirection(toolbar.getDirRelleno());
         shape.setTrazo(toolbar.getTrazo());
-   }
+    }
    
-   public void updateShape(){
+    /**
+     * Método que actualiza la última forma añadida al lienzo,
+     * con los puntos de click inicial y drag final.
+     */
+    public void updateShape(){
       MyShapes shape = shapes.get(shapes.size()-1);
 
       if (dragFin != null)
          shape.update(clickPoint, dragFin);
-   }
+    }
   
-   @Override
-   public void paint(final Graphics g){
+    /**
+     * Método de pintado del lienzo, que incluye el pintado 
+     * de todas las formas del lienzo en cuestión.
+     * 
+     * @param g Objeto gráfico donde pintar.
+     */
+    @Override
+    public void paint(final Graphics g){
       super.paint(g);
       Graphics2D g2d = (Graphics2D) g;
 
       for (MyShapes s : shapes){
          s.draw(g2d);
       }
-   }
+    }
 
-   public void paint(final Graphics g, BufferedImage img){
+    /**
+     * Método de pintado que pinta una imagen recibida como argumento,
+     * y las formas creadas en el lienzo.
+     * 
+     * @param g Objeto gráfico donde pintar.
+     * @param img Imagen a pintar.
+     */
+    public void paint(final Graphics g, BufferedImage img){
       super.paint(g);
       Graphics2D g2d = (Graphics2D) g;
 
@@ -164,11 +241,12 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
       for (MyShapes s : shapes){
          s.draw(g2d);
       }
-   }
+    }
    
     // Implementación de métodos abstractos de los listeners
     @Override
     public void mouseClicked(MouseEvent evt) {
+
         clickPoint = evt.getPoint();
         dragFin = null;
         repaint();
@@ -178,12 +256,19 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
     public void mousePressed(MouseEvent evt) {
         clickPoint = evt.getPoint();
         lastDrag = clickPoint;
+        // Si se estaba pintando una curva, este click es para el punto de control
+        if (curve_drawing){
+            MyCurve2D curva = (MyCurve2D) shapes.get(shapes.size()-1);
+            curva.updateCtrl(clickPoint);
+            curve_drawing = false;
+            return;
+        }
         
         // Poner todas las formas sin seleccionar.
-        if (toolbar.selectedShape != null)
-            toolbar.selectedShape.setSelected(false);
+        if (toolbar.getSelectedShape() != null)
+            toolbar.getSelectedShape().setSelected(false);
         
-        toolbar.selectedShape = null;
+        toolbar.setSelectedShape(null);
         for (MyShapes s : shapes)
             s.setSelected(false);
         
@@ -202,7 +287,7 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
 
     @Override
     public void mouseReleased(MouseEvent evt) {
-        if (!toolbar.editable() && !toolbar.seleccion())
+        if (!toolbar.editable() && !toolbar.seleccion() && !curve_drawing)
             updateShape();
 
         dragFin = null;
@@ -210,11 +295,6 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
         selectedShape = null;
     }
 
-    
-    /**
-     *
-     * @param evt
-     */
     @Override
     public void mouseDragged(MouseEvent evt) {
         dragFin = evt.getPoint();
@@ -222,7 +302,7 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
            if (selectedShape != null)
               selectedShape.move(lastDrag, dragFin);
         }else if(!toolbar.seleccion()){
-           updateShape();;
+           updateShape();
         }
         
         lastDrag = dragFin;
@@ -231,16 +311,22 @@ public class Lienzo extends JPanel implements MouseListener, MouseMotionListener
 
     @Override
     public void mouseEntered(MouseEvent evt) {
-        return;
     }
 
     @Override
     public void mouseExited(MouseEvent evt) {
-        return;
     }   
 
     @Override
-    public void mouseMoved(MouseEvent me) {
+    public void mouseMoved(MouseEvent evt) {
+        // Si se estaba pintando una curva bezier
+        if (curve_drawing){
+            // Obtener la curva y actualizar el punto de control.
+            MyCurve2D curva = (MyCurve2D) shapes.get(shapes.size()-1);
+            curva.updateCtrl(evt.getPoint());
+            repaint();
+        }
+            
         return;
     }
 }

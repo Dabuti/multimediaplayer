@@ -9,28 +9,37 @@ package com.iris.sonido;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
-import javax.swing.JPanel;
 import sm.sound.SMSoundRecorder;
 
 /**
+ * Clase que representa un grabador de audio. 
+ * También implementa su propio <code>ActionListener</code>
  *
- * @author
+ * @author Iris García <a href="mailto:irisgarcia@correo.ugr.es"></a>
  */
 public class AudioRecorder implements ActionListener{
     private JButton recordBtn, stopBtn;
     private File temp;
     private SMSoundRecorder smrec;
-    private ImageIcon recGris, recRojo, stopGris, stopRojo;
-    private JPanel panel;
+    private final ImageIcon recGris, recRojo, stopGris, stopRojo, stopAzul;
+    private final LienzoSoundRecorder lirec;
 
-    public AudioRecorder(JPanel panel){
-        this.panel = panel;
+    /**
+     * Constructor común, que crea una instancia de <code>AudioRecorder</code>
+     * y le asocia un <code>LienzoSoundRecorder</code>.
+     * 
+     * @param lirec <code>LienzoSoundRecorder</code> asociado.
+     */
+    public AudioRecorder(LienzoSoundRecorder lirec){
+        this.lirec = lirec;
         recordBtn = new JButton();
         stopBtn = new JButton();
         
@@ -38,25 +47,68 @@ public class AudioRecorder implements ActionListener{
         recRojo = new ImageIcon(AudioRecorder.class.getResource("/com/iris/iconos/RecordPressed_48x48.png"));
         stopGris = new ImageIcon(AudioRecorder.class.getResource("/com/iris/iconos/StopDisabled_48x48.png"));
         stopRojo = new ImageIcon(AudioRecorder.class.getResource("/com/iris/iconos/StopNormalRed_48x48.png"));
+        stopAzul = new ImageIcon(AudioRecorder.class.getResource("/com/iris/iconos/StopPressedBlue_48x48.png"));
 
         recordBtn.setDisabledIcon(recRojo);
         recordBtn.setIcon(recGris);
-        recordBtn.setPreferredSize(new Dimension(48,48));
+        recordBtn.setPreferredSize(new Dimension(90,90));
         
         stopBtn.setDisabledIcon(stopGris);
         stopBtn.setIcon(stopGris);
-        stopBtn.setPreferredSize(new Dimension(48,48));
+        stopBtn.setPreferredSize(new Dimension(90,90));
+        stopBtn.setEnabled(false);
         recordBtn.addActionListener(this);
         stopBtn.addActionListener(this);
+        
+        recordBtn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent me) {
+                if (recordBtn.isEnabled()){
+                    recordBtn.setIcon(recRojo);
+                }
+            }
+            @Override
+            public void mouseExited(MouseEvent me) {
+                if (recordBtn.isEnabled()){
+                    recordBtn.setIcon(recGris);
+                }
+            }
+        });
+        stopBtn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent me) {
+                if (stopBtn.isEnabled()){
+                    stopBtn.setIcon(stopAzul);
+                }
+            }
+            @Override
+            public void mouseExited(MouseEvent me) {
+                if (stopBtn.isEnabled()){
+                    stopBtn.setIcon(stopRojo);
+                }
+            }
+        });
+
     }
     
+    /**
+     * Devuelve el botón de comienzo de grabación.
+     * @return <code>JButton</code> comienzo grabación.
+     */
     public JButton getRecordBtn(){
         return recordBtn;
     }
+    /**
+     * Devuelve el botón de fin de grabación.
+     * @return <code>JButton</code> fin grabación.
+     */
     public JButton getStopBtn(){
         return stopBtn;
     }
 
+    /**
+     * Método que comienza la grabación de sonido.
+     */
     public void record(){
         try {
             temp = File.createTempFile("tempfile", ".wav");
@@ -67,34 +119,40 @@ public class AudioRecorder implements ActionListener{
         }
     }
     
+    /**
+     * Método que para la grabación de sonido.
+     * Una vez parada, lanza un dialog al usuario para seleccionar el
+     * archivo donde guardar el nuevo sonido.
+     */
     public void stop(){
         smrec.stop();
         JFileChooser chooser = new JFileChooser();
         
-        int resp = chooser.showSaveDialog(panel);
+        int resp = chooser.showSaveDialog(lirec);
 
         if (resp == JFileChooser.APPROVE_OPTION){
             String path = chooser.getSelectedFile().getAbsolutePath() + ".wav";
             File seleccion = new File(path);
             try {
                 Files.copy(temp.toPath(), seleccion.toPath());
+                lirec.getReproductorSM().cargarArchivo(seleccion);
             } catch (IOException ex) {
                 System.err.println(ex);
             }
-            temp = null;
         }
+        temp = null;
     }
     
     @Override
     public void actionPerformed(ActionEvent ae) {
         Object source = ae.getSource();
         
-        if (source == recordBtn){
+        if (source == recordBtn && recordBtn.isEnabled()){
             this.record();
             recordBtn.setEnabled(false);
             stopBtn.setEnabled(true);
             stopBtn.setIcon(stopRojo);
-        }else if (source == stopBtn){
+        }else if (source == stopBtn && stopBtn.isEnabled()){
             this.stop();
             stopBtn.setEnabled(false);
             recordBtn.setEnabled(true);

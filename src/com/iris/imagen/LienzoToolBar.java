@@ -6,11 +6,9 @@
 
 package com.iris.imagen;
 
-import com.iris.imagen.Lienzo;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -19,7 +17,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.util.Enumeration;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -37,10 +34,13 @@ import javax.swing.JToggleButton;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import com.iris.reproductorsm.ReproductorSM;
 
 /**
- *
- * @author dabuti
+ * Clase encargada de construir un <code>JPanel</code> con las herramientas necesarias
+ * para el dibujado sobre lienzos.
+ * 
+ * @author Iris García <a href="mailto:irisgarcia@correo.ugr.es"></a>.
  */
 public class LienzoToolBar extends JPanel {
     public static final int SINRELLENO = 0, LISO = 1, DEGRADADO = 2;
@@ -59,10 +59,15 @@ public class LienzoToolBar extends JPanel {
     private JComboBox trazoBtn;
     private JComboBox rellenoBtn;
     private JSpinner grosorBtn;
-
-    public MyShapes selectedShape = null;
+    private ReproductorSM repSM;
+    private MyShapes selectedShape = null;
     
-    public LienzoToolBar(){
+    /**
+     * Constructor común.
+     * @param rep <code>ReproductorSM</code> asociado.
+     */
+    public LienzoToolBar(ReproductorSM rep){
+        repSM = rep;
         trazo = tiporelleno = dirrelleno = 0;
         grosor = 2;
         relleno = editable = seleccion = false;
@@ -122,6 +127,13 @@ public class LienzoToolBar extends JPanel {
         this.add(trazoPanel, c);       
     }
     
+    /**
+     * Ajusta el valor de todos los atributos de la barra de herramientas
+     * con los valores de la forma <code>MyShapes</code> recibida como 
+     * argumento.
+     * 
+     * @param shape <code>MyShapes</code> a leer.
+     */
     public void readSelectedShape(MyShapes shape){
         if (selectedShape != null)
             selectedShape.setSelected(false);
@@ -151,21 +163,13 @@ public class LienzoToolBar extends JPanel {
                 rellenoBtn.setSelectedIndex(3);
         }
     }
-    
-    
-    // TODO: Borrar función, no usada.
-    public void updateSelectedShape(){
-        if (selectedShape != null){
-            selectedShape.setfgColor(fgcolor);
-            selectedShape.setbgColor(bgcolor);
-            selectedShape.setGrosor(grosor);
-            selectedShape.setTrazo(trazo);
-        }
-        JRootPane root = getRootPane();
-        root.repaint();
-    }
-    
-    // Método llamado desde el constructor que crea los botones de las formas.
+
+    /**
+     * Crea un <code>JPanel</code> con las <code>MyShapes</code> disponibles
+     * para el dibujado.
+     * 
+     * @return <code>JPanel</code> de <code>MyShapes</code>.
+     */
     private JPanel createShapesPanel(){
         JPanel panel = new JPanel();
         shapesGroup = new MyButtonGroup();
@@ -180,6 +184,7 @@ public class LienzoToolBar extends JPanel {
         JToggleButton elipse = new JToggleButton();
         JToggleButton mover = new JToggleButton();
         JToggleButton seleccionar = new JToggleButton();
+        JToggleButton curva = new JToggleButton();
 
         ImageIcon iconLapiz = new ImageIcon(Lienzo.class.getResource("/com/iris/iconos/Lapiz.gif"));
         ImageIcon iconLinea = new ImageIcon(Lienzo.class.getResource("/com/iris/iconos/Linea.gif"));
@@ -187,6 +192,7 @@ public class LienzoToolBar extends JPanel {
         ImageIcon iconOvalo = new ImageIcon(Lienzo.class.getResource("/com/iris/iconos/Ovalo.gif"));
         ImageIcon iconSel = new ImageIcon(Lienzo.class.getResource("/com/iris/iconos/Hand.png"));
         ImageIcon iconMover = new ImageIcon(Lienzo.class.getResource("/com/iris/iconos/Move.png"));
+        ImageIcon iconCurva = new ImageIcon(Lienzo.class.getResource("/com/iris/iconos/Curva.png"));
 
         // Properties of seleccionar
         seleccionar.setIcon(iconSel);
@@ -195,7 +201,7 @@ public class LienzoToolBar extends JPanel {
         seleccionar.setBorderPainted(false);
         seleccionar.setBorder(null);
         seleccionar.setMargin(new Insets(0, 0, 0, 0));
-        seleccionar.setToolTipText("Seleccionar formas");
+        seleccionar.setToolTipText("Seleccionar forma");
 
         // Properties of mover
         mover.setIcon(iconMover);
@@ -204,6 +210,8 @@ public class LienzoToolBar extends JPanel {
         mover.setBorderPainted(false);
         mover.setBorder(null);
         mover.setMargin(new Insets(0, 0, 0, 0));
+        mover.setToolTipText("Mover forma");
+        
         
         // Properties of punto
         punto.setIcon(iconLapiz);
@@ -213,6 +221,7 @@ public class LienzoToolBar extends JPanel {
         punto.setBorder(null);
         punto.setMargin(new Insets(0, 0, 0, 0));
         punto.setSelected(true);
+        punto.setToolTipText("Punto");
 
         // Properties of linea
         linea.setIcon(iconLinea);
@@ -221,6 +230,7 @@ public class LienzoToolBar extends JPanel {
         linea.setBorderPainted(false);
         linea.setBorder(null);
         linea.setMargin(new Insets(0, 0, 0, 0));
+        linea.setToolTipText("Linea");
 
         // Properties of rectangulo
         rectangulo.setIcon(iconRectangulo);
@@ -229,6 +239,7 @@ public class LienzoToolBar extends JPanel {
         rectangulo.setBorderPainted(false);
         rectangulo.setBorder(null);
         rectangulo.setMargin(new Insets(0, 0, 0, 0));
+        rectangulo.setToolTipText("Rectángulo");
 
         // Properties of elipse
         elipse.setIcon(iconOvalo);
@@ -237,12 +248,23 @@ public class LienzoToolBar extends JPanel {
         elipse.setBorderPainted(false);
         elipse.setBorder(null);
         elipse.setMargin(new Insets(0, 0, 0, 0));
+        elipse.setToolTipText("Elipse");
+
+        // Properties of curva
+        curva.setIcon(iconCurva);
+        curva.setName("Curva");
+        curva.setSelectedIcon(iconCurva);
+        curva.setBorderPainted(false);
+        curva.setBorder(null);
+        curva.setMargin(new Insets(0, 0, 0, 0));
+        curva.setToolTipText("Curva bezier");
 
         // Add items to the toolbar
         panel.add(seleccionar);
         panel.add(mover);
         panel.add(punto);
         panel.add(linea);
+        panel.add(curva);
         panel.add(rectangulo);
         panel.add(elipse);
         
@@ -251,6 +273,7 @@ public class LienzoToolBar extends JPanel {
         shapesGroup.add(mover);
         shapesGroup.add(punto);
         shapesGroup.add(linea);
+        shapesGroup.add(curva);
         shapesGroup.add(rectangulo);
         shapesGroup.add(elipse);
 
@@ -260,6 +283,7 @@ public class LienzoToolBar extends JPanel {
           final AbstractButton shape = shapes.nextElement();
 
           shape.addMouseListener(new MouseAdapter(){
+                @Override
                 public void mouseClicked(MouseEvent evt){
                    forma = shape.getName();
                    seleccion = editable = false;
@@ -271,14 +295,30 @@ public class LienzoToolBar extends JPanel {
                        seleccion = true;
                    if (forma.equals("Mover"))
                        editable = true;
-                   //shapeLabel.setText(shape.getName());
                 }
+                @Override
+                public void mouseEntered(MouseEvent evt){
+                    repSM.setEstado(shape.getName());
+                }
+                @Override
+                public void mouseExited(MouseEvent evt){
+                    repSM.setEstado("");
+                }   
              });
         }
 
         return panel;
     }
     
+    /**
+     * Crea un <code>JPanel</code> para la selección de colores.
+     * Permite seleccionar un color primario y un secundario.
+     * 
+     * click izquierdo: Ajusta el color primario.
+     * click derecho: Ajusta el color secundario.
+     * 
+     * @return <code>JPanel</code> de colores.
+     */
     private JPanel createColorsPanel(){
       JPanel wrapper = new JPanel();
       JPanel colorsGrid = new JPanel();
@@ -342,6 +382,8 @@ public class LienzoToolBar extends JPanel {
       bgcolorBtn = new JButton();
       fgcolorBtn.setName("fgcolor");
       bgcolorBtn.setName("bgcolor");
+      fgcolorBtn.setToolTipText("Color primario");
+      bgcolorBtn.setToolTipText("Color secundario");
       fgcolorBtn.setBackground(fgcolor);
       bgcolorBtn.setBackground(bgcolor);
       
@@ -414,7 +456,12 @@ public class LienzoToolBar extends JPanel {
       
       return wrapper;
     }    
-    
+    /**
+     * Crea un <code>JPanel</code> con herramientas para el ajuste
+     * del trazo.
+     * 
+     * @return <code>JPanel</code> de trazo.
+     */
     private JPanel createTrazoPanel(){
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
@@ -552,18 +599,98 @@ public class LienzoToolBar extends JPanel {
     }
     
     // Getters
+    /**
+     * Devuelve el color primario seleccionado.
+     * @return <code>Color</code> primario.
+     */
     public Color fgcolorSelected(){ return this.fgcolor; }
+    /**
+     * Devuelve el color secundario seleccionado.
+     * @return <code>Color</code> secundario.
+     */
     public Color bgcolorSelected(){ return this.bgcolor; }
+    /**
+     * Devuelve el string asociado del <code>MyShapes</code> seleccionado.
+     * @return <code>String</code> forma seleccionada.
+     */
     public String formaSelected(){ return this.forma; }
+    /**
+     * Devuelve el grosor seleccionado.
+     * @return <code>Integer</code> grosor.
+     */
     public int getGrosor(){ return this.grosor; }
-    public int getTipoRelleno(){ return this.tiporelleno; }
-    public int getDirRelleno(){ return this.dirrelleno; }
-    public int getTrazo(){ return this.trazo; }
-    public boolean editable(){ return this.editable; }
-    public boolean seleccion(){ return this.seleccion; }
+    /**
+     * Permite consultar si la opción relleno está activada o no.
+     * 
+     * @return <code>boolean</code> <code>true</code> relleno
+     * <code>false</code> sin relleno.
+     */
     public boolean relleno(){ return this.relleno; }
+
+    /**
+     * Devuelve el tipo de relleno seleccionado.
+     * <ul>
+     * <li>0- Sin relleno</li>
+     * <li>1- Relleno liso</li>
+     * <li>2- Relleno degradado</li>
+     * </ul>
+     * 
+     * @return <code>Integer</code> relleno.
+     */
+    public int getTipoRelleno(){ return this.tiporelleno; }
+    /**
+     * Devuelve la dirección de relleno
+     * <ul>
+     * <li>1- Horizontal</li>
+     * <li>2- Vertical</li>
+     * </ul>
+     * 
+     * @return <code>Integer</code> relleno.
+     */
+    public int getDirRelleno(){ return this.dirrelleno; }
+    /**
+     * Devuelve el valor del trazo seleccionado.
+     * 
+     * @return <code>Integer</code> trazo.
+     */
+    public int getTrazo(){ return this.trazo; }
+    /**
+     * Permite consultar si la opción editar está activada
+     * o no.
+     * 
+     * @return <code>boolean</code> <code>true</code> editable
+     * <code>false</code> no editable.
+     */
+    public boolean editable(){ return this.editable; }
+    /**
+     * Permite consultar si la opción selección está activada
+     * o no.
+     * 
+     * @return <code>boolean</code> <code>true</code> selección
+     * <code>false</code> sin selección.
+     */
+    public boolean seleccion(){ return this.seleccion; }
+    /**
+     * Devuelve el <code>MyShapes</code> seleccionado.
+     * @return <code>MyShapes</code> seleccionado.
+     */
+    public MyShapes getSelectedShape(){ return this.selectedShape; }
     
-    
-    // Setters NOTA: hay que actualizar los datos de los labels.
+
+    // Setters
+    /**
+     * Actualiza el valor del grosor.
+     * 
+     * @param grosor <code>Intenger</code> grosor.
+     */
     public void setGrosor(int grosor){ this.grosor = grosor; }
+    /**
+     * Ajusta el <code>MyShapes</code> seleccionado con el recibido
+     * como argumento.
+     * 
+     * @param s <code>MyShapes</code> seleccionado.
+     */
+    public void setSelectedShape(MyShapes s){
+        this.selectedShape = s;
+    }
 }

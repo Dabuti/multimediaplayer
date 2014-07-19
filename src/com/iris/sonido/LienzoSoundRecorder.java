@@ -8,19 +8,36 @@ package com.iris.sonido;
 
 import java.awt.Dimension;
 import javax.swing.JPanel;
+import com.iris.reproductorsm.ReproductorSM;
 
 /**
+ * Clase que representa un lienzo de grabación de sonido, hereda de
+ * <code>JPanel</code>
  *
- * @author 
+ * @author Iris García <a href="mailto:irisgarcia@correo.ugr.es"></a>
  */
 public class LienzoSoundRecorder extends JPanel {
-    private AudioRecorder recorder;
+    private final AudioRecorder recorder;
+    private final ReproductorSM repsm;
     
-    public LienzoSoundRecorder() {
-        this.setPreferredSize(new Dimension(250,250));
+    /**
+     * Constructor común, que crea una instancia de <code>LienzoSoundRecorder</code> y
+     * lo asocia a un <code>ReproductorSM</code>
+     * 
+     * @param repsm <code>ReproductorSM</code> reproductor multimedia.
+     */
+    public LienzoSoundRecorder(ReproductorSM repsm) {
+        this.setPreferredSize(new Dimension(220,110));
         this.recorder = new AudioRecorder(this);
         this.add(recorder.getRecordBtn());
         this.add(recorder.getStopBtn());
+        this.repsm = repsm;
     }
     
+    /**
+     * Devuelve el reproductor multimedia asociado.
+     * 
+     * @return <code>ReproductorSM</code> asociado.
+     */
+    public ReproductorSM getReproductorSM(){ return this.repsm; }
 }

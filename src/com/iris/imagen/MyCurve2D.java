@@ -6,52 +6,50 @@
 
 package com.iris.imagen;
 
-import java.awt.geom.Line2D;
+import java.awt.BasicStroke;
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.geom.Point2D;
+import java.awt.geom.QuadCurve2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.Color;
-import java.awt.BasicStroke;
 
 /**
- * Clase que representa una línea. extiende el comportamiento de
- * <code>Line2D</code> e implementa la interface <code>MyShapes</code>.
- *
- * @author Iris García <a href="mailto:irisgarcia@correo.ugr.es"></a>
- * @version 1.0
+ * Clase que representa una curva de Bezier, extiende la funcionalidad de
+ * <code>QuadCurve2D.Double</code> e implementa la interface <MyShapes>.
+ * 
+ * @author Iris García <a href="mailto:irisgarcia@correo.ugr.es"></a>.
  */
-public class MyLine2D extends Line2D implements MyShapes{
-   private double x1, x2, y1, y2;
+public class MyCurve2D extends QuadCurve2D.Double implements MyShapes {
+   private double x1, y1, ctrlx, ctrly, x2, y2;
    private Color fgcolor = Color.black;
    private Color bgcolor = Color.black;
    private BasicStroke stroke;;
    private boolean filled = false, selected = false;
    private int tiporelleno, dirrelleno, trazo, grosor = 2, padding = 4;
    private MyRectangle2D rectSeleccion = null;
+   private Point2D p1, p2, ctrlp;
 
    /**
     * Constructor por defecto.
     */
-   public MyLine2D() {}
-
+   public MyCurve2D() {}
    /**
-    * Constructor común.
-    * Crea una nueva instancia de <code>MyLine2D</code> con los puntos
-    * recibidos como argumento.
+    * Constructor común. Crea una instancia a partir de un 
+    * punto.
     * 
-    * @param p1 <code>Point</code> punto inicial.
-    * @param p2 <code>Point</code> punto final.
+    * @param x <code>double</code> coordenada x de un punto.
+    * @param y <code>double</code> coordenada y de un punto.
     */
-   public MyLine2D(Point p1, Point p2) {
-      this.x1 = (double) p1.x;
-      this.y1 = (double) p1.y;
-      this.x2 = (double) p2.x;
-      this.y2 = (double) p2.y;
+   public MyCurve2D(double x, double y) {
+      super(x, y, x, y, x, y);
+      p1 = new Point2D.Double(x, y);
+      ctrlp = new Point2D.Double(x, y);
+      p2 = new Point2D.Double(x, y);
       stroke = new BasicStroke(1.0f);
    }
-
- // My interface
+   
+   // My interface
    @Override
    public void setfgColor(Color col){ this.fgcolor = col; }
    @Override
@@ -59,16 +57,43 @@ public class MyLine2D extends Line2D implements MyShapes{
    @Override
    public void setFilled(boolean filled){ this.filled = filled; }
    @Override
+   public void setGrosor(int grosor){ this.grosor = grosor; }
+   @Override
    public void setFilledType(int type) { this.tiporelleno = type; }
    @Override
    public void setFilledDirection(int dir) { this.dirrelleno = dir; }
    @Override
    public void setTrazo(int trazo) { this.trazo = trazo; }
    @Override
-   public void setGrosor(int grosor){ if (grosor > 2) this.grosor = grosor;}
-   @Override
    public void setSelected(boolean selection) { this.selected = selection; }
-
+   
+   // Para la curva significa el punto final de la curva, x2 e y2
+   @Override
+   public void update(Point p1, Point p2){
+       double xctrl, yctrl;
+       this.p1.setLocation(p1.x, p1.y);
+       this.p2.setLocation(p2.x, p2.y);
+       
+       // Punto medio
+       xctrl = (p1.x + p2.x) / 2;
+       yctrl = (p1.y + p2.y) / 2;
+       
+       this.ctrlp.setLocation(xctrl, yctrl);
+       
+       setCurve(this.p1, this.ctrlp, this.p2);
+   }
+   
+   // Método para actualizar punto de control
+   /**
+    * Actualiza el punto de control de la curva.
+    * 
+    * @param p <code>Point</code> de control.
+    */
+   public void updateCtrl(Point p){
+       this.ctrlp.setLocation(p.x, p.y);
+       setCurve(this.p1, this.ctrlp, this.p2);
+   }
+   
    // Getters
    @Override
    public Color getfgColor() { return fgcolor; }
@@ -84,53 +109,18 @@ public class MyLine2D extends Line2D implements MyShapes{
    public int getFilledDirection() { return dirrelleno; }
    @Override
    public int getTrazo() { return trazo; }
-   
    @Override
-   public void setLine(double x1, double y1, double x2, double y2){
-      this.x1 = x1;
-      this.y1 = y1;
-      this.x2 = x2;
-      this.y2 = y2;
-   }
-
-   @Override
-   public Point2D getP1(){ return new Point2D.Double(x1, y1); }
-   @Override
-   public Point2D getP2(){ return new Point2D.Double(x2, y2); }
-   @Override
-   public double getX1(){ return x1; }
-   @Override
-   public double getX2(){ return x2; }
-   @Override
-   public double getY1(){ return y1; }
-   @Override
-   public double getY2(){ return y2; }
-   @Override
-   public Rectangle2D getBounds2D(){
-      return new Rectangle2D.Double(x1, y1, x2, y2);
-   }
-
-   @Override
-   public void update(Point p1, Point p2){
-      setLine(p1.x, p1.y, p2.x, p2.y);
-   }
-
-   @Override
-   public boolean contains(Point2D p1){
-      return (ptLineDist(p1) <= stroke.getLineWidth());
-   }
-
-   @Override
-   public void move(Point p1, Point p2){
+   public void move(Point p1, Point p2) {
       double offset_x = p2.x - p1.x;
       double offset_y = p2.y - p1.y;
-
-      setLine(x1 + offset_x, y1 + offset_y,
-              x2 + offset_x, y2 + offset_y);
+      
+      this.p1.setLocation(this.p1.getX() + offset_x, this.p1.getY() + offset_y);
+      this.p2.setLocation(this.p2.getX() + offset_x, this.p2.getY() + offset_y);
+      this.ctrlp.setLocation(this.ctrlp.getX() + offset_x, this.ctrlp.getY() + offset_y);  
+      setCurve(this.p1, this.ctrlp, this.p2);
    }
-
    @Override
-   public void draw(Graphics2D g){
+   public void draw(Graphics2D g) {
       // Comprobar trazo
       if (trazo == LienzoToolBar.DISCONTINUA)
           stroke = new BasicStroke((float) grosor,  // Width
@@ -152,6 +142,7 @@ public class MyLine2D extends Line2D implements MyShapes{
         
         rectSeleccion = new MyRectangle2D(0,0,0,0); 
         rectSeleccion.update(p1, p2);
+        Rectangle2D rec = this.getBounds2D();
         
         stroke = new BasicStroke(1,  // Width
                         BasicStroke.CAP_ROUND,     // End cap
@@ -161,7 +152,7 @@ public class MyLine2D extends Line2D implements MyShapes{
                         0.0f);                     // Dash phase
         g.setStroke(stroke);
         g.setColor(Color.darkGray);
-        g.draw(rectSeleccion);
+        g.draw(rec);
       }
-   }  
+   }
 }

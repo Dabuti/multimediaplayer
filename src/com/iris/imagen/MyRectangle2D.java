@@ -14,20 +14,14 @@ import java.awt.Point;
 import java.awt.geom.Rectangle2D;
 
 /**
- * Describe class MyRectangle2D here.
+ * Clase que representa un rectángulo, hereda el comportamiento de 
+ * <code>Rectangle2D.Double</code> e implementa la interfaz 
+ * <code>MyShapes</code>.
  *
- *
- * Created: 
- *
- * @author 
+ * @author Iris García <a href="mailto:irisgarcia@correo.ugr.es"></a>
  * @version 1.0
  */
 public class MyRectangle2D extends Rectangle2D.Double implements MyShapes{
-
-   /**
-    * Creates a new <code>MyRectangle2D</code> instance.
-    *
-    */
    private double x1, x2, y1, y2;
    private Color fgcolor = Color.black;
    private Color bgcolor = Color.black;
@@ -37,8 +31,19 @@ public class MyRectangle2D extends Rectangle2D.Double implements MyShapes{
    private MyRectangle2D rectSeleccion = null;
    private int padding = 2;
 
-   
+   /**
+    * Constructor por defecto.
+    */
    public MyRectangle2D() {}
+   /**
+    * Constructor común, que crea una instancia de <code>MyRectangle2D</code> a 
+    * partir de los parametros recibidos como argumento.
+    * 
+    * @param x <code>double</code> coordenada x, punto superior izquierdo.
+    * @param y <code>double</code> coordenada y, punto superior izquierdo.
+    * @param w <code>double</code> ancho.
+    * @param h <code>double</code> alto.
+    */
    public MyRectangle2D(double x, double y, double w, double h) {
       super(x, y, w, h);
       stroke = new BasicStroke(1.0f);

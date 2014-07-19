@@ -39,8 +39,13 @@ import javax.swing.SwingWorker;
 import javax.swing.border.LineBorder;
 
 /**
- *
- * @author
+ * Clase que representa un reproductor de sonidos simples,
+ * Permitiendo la reproducción, pausa y parado de los mismos.
+ * Además como innovación se ha añadido una clase interna para 
+ * dibujar la amplitud de onda que se escucha en cada momento de
+ * la reproducción.
+ * 
+ * @author Iris García <a href="mailto:irisgarcia@correo.ugr.es"></a>
  */
 public class AudioPlayer implements ActionListener {
     public static final int DEF_BUFFER_SAMPLE_SZ = 1024;
@@ -60,6 +65,12 @@ public class AudioPlayer implements ActionListener {
     private final AudioButton bPause = new AudioButton("Pause");
     private final AudioButton bStop = new AudioButton("Stop");
     
+    /**
+     * Constructor común, que crea una instancia de <code>AudioPlayer</code> a partir
+     * de un fichero recibido como argumento.
+     * 
+     * @param sound <code>File</code> sonido simple
+     */
     public AudioPlayer(File sound){
         try {
             AudioFileFormat fmt = AudioSystem.getAudioFileFormat(sound);
@@ -78,18 +89,59 @@ public class AudioPlayer implements ActionListener {
         bPause.addActionListener(this);
         bStop.addActionListener(this);
     }
-    
-    public void play(){}
-    public void pause(){}
-    public void stop(){}
+
+    /**
+     * Devuelve el botón Play del reproductor de sonido.
+     * 
+     * @return <code>AudioButton</code> play
+     */
     public AudioButton getPlayBtn(){ return bPlay; } 
+    /**
+     * Devuelve el botón Pause del reproductor de sonido.
+     * 
+     * @return <code>AudioButton</code> pause
+     */
     public AudioButton getPauseBtn(){ return bPause; } 
+    /**
+     * Devuelve el botón Stop del reproductor de sonido.
+     * 
+     * @return <code>AudioButton</code> stop
+     */
     public AudioButton getStopBtn(){ return bStop; } 
-   
+    /**
+     * Devuelve el <code>JPanel</code> donde se dibuja la amplitud
+     * de la onda de sonido.
+     * 
+     * @return <code>JPanel</code> waveformpanel
+     */
     public JPanel getWaveFormPanel(){ return this.waveformpanel; }
+    /**
+     * Devuelve el objeto utilizado para la sincronización.
+     * 
+     * @return <code>Object</code> statLock
+     */
     public Object getLock() { return statLock; }
+    /**
+     * Devuelve el estado actual del reproductor:
+     * <ul>
+     * <li>Parado</li>
+     * <li>Pausado</li>
+     * <li>Reproduciendo</li>
+     * </ul>
+     * @return <code>PlayStat</code> estado.
+     */
     public PlayStat getStat() { return playStat; }
+    /**
+     * Devuelve el fichero de audio.
+     * 
+     * @return <code>File</code> audio file.
+     */
     public File getFile() {return audioFile; }   
+    
+    /**
+     * Método que limpia el panel de onda de audio y pone
+     * el estado del reproductor a Parado.
+     */
     public void playEnded() {
         synchronized(statLock) {
             playStat = PlayStat.STOPPED;
@@ -98,6 +150,13 @@ public class AudioPlayer implements ActionListener {
         waveformpanel.reset();
         waveformpanel.repaint();
     }
+    /**
+     * Pinta en el <code>JPanel</code> de amplitud de onda
+     * los valores, de la reproducción actual.
+     * 
+     * @param samples <code>float[]</code> muestras
+     * @param svalid <code>int</code> límite de frames
+     */
     public void drawDisplay(float[] samples, int svalid){
         waveformpanel.makePath(samples, svalid);
         waveformpanel.repaint();
@@ -157,6 +216,10 @@ public class AudioPlayer implements ActionListener {
     }
 
     // Clases internas
+    /**
+     * Clase que representa un <code>JPanel</code> para dibujar en él
+     * la amplitud de onde del sonido que se está reproduciendo.
+     */
     public class WaveFormPanel extends JPanel{
         private final BufferedImage image;
         
@@ -179,10 +242,16 @@ public class AudioPlayer implements ActionListener {
             );
         }
         
+        /**
+         * Constructor por defecto.
+         */
         public WaveFormPanel() {
             setOpaque(false);
         }
         
+        /**
+         * Resetea el panel completamente, con fondo negro.
+         */
         public void reset() {
             Graphics2D g2d = image.createGraphics();
             g2d.setBackground(Color.BLACK);
@@ -190,22 +259,24 @@ public class AudioPlayer implements ActionListener {
             g2d.dispose();
         }
         
+        /**
+         * Compone el camino de las ondas a partir de las muestras 
+         * recibidas como argumento.
+         * 
+         * @param samples <code>float[]</code> muestras
+         * @param svalid <code>int</code> frames
+         */
         public void makePath(float[] samples, int svalid) {
             if(audioFormat == null) {
                 return;
             }
             
-            /* shuffle */
-            
             Path2D.Float current = paths[2];
             paths[2] = paths[1];
             paths[1] = paths[0];
             
-            /* lots of ratios */
-            
             float avg = 0f;
             float hd2 = getHeight() / 2f;
-            
             final int channels = audioFormat.getChannels();
             
             int i = 0;
@@ -222,8 +293,6 @@ public class AudioPlayer implements ActionListener {
             for(int ch, frame = 0; i < svalid; frame++) {
                 avg = 0f;
                 
-                /* average the channels for each frame. */
-                
                 for(ch = 0; ch < channels; ch++) {
                     avg += samples[i++];
                 }
@@ -236,7 +305,6 @@ public class AudioPlayer implements ActionListener {
             }
             
             paths[0] = current;
-                
             Graphics2D g2d = image.createGraphics();
             
             synchronized(pathLock) {
@@ -289,14 +357,30 @@ public class AudioPlayer implements ActionListener {
             return getPreferredSize();
         }
     }
-    
+
+    /**
+     * Clase encargada de la reproducción del sonido, hereda de <code>SwingWorker</code>
+     * para poder lanzar una nueva hebra con cada reproducción.
+     * 
+     */
     public class PlayLoop extends SwingWorker<Void, Void>{
         private final AudioPlayer audioPlayer;
-        
+
+        /**
+         * Constructor común.
+         * 
+         * @param ap <code>AudioPlayer</code> reproductor de audio.
+         */
         public PlayLoop(AudioPlayer ap) {
             this.audioPlayer = ap;
         }
         
+        /**
+         * Sobrecarga del método que lanza una nueva hebra en cada llamada,
+         * para reproducir el sonido.
+         * 
+         * @return 
+         */
         @Override
         public Void doInBackground() {
             try {
@@ -377,6 +461,9 @@ public class AudioPlayer implements ActionListener {
             return (Void) null;
         }
         
+        /**
+         * Método que finaliza la reproducción de sonido.
+         */
         @Override
         public void done() {
             audioPlayer.playEnded();
@@ -391,6 +478,9 @@ public class AudioPlayer implements ActionListener {
         }
     }
 
+    /**
+     * Clase que representa un botón del reproductor de sonido simple.
+     */
     public static class AudioButton extends JButton {
         public AudioButton(String text) {
             super(text);

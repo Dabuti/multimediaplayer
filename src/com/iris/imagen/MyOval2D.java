@@ -13,23 +13,15 @@ import java.awt.Color;
 import java.awt.BasicStroke;
 import java.awt.GradientPaint;
 import java.awt.RenderingHints;
-import javax.swing.JOptionPane;
 
 /**
- * Describe class MyOval2D here.
- *
- *
- * Created: Thu Apr  11 18:20:12 2014
+ * Clase que representa una círculo. extiende el comportamiento de
+ * <code>Ellipse2D.Double</code> e implementa la interface <code>MyShapes</code>.
  *
  * @author Iris García <a href="mailto:irisgarcia@correo.ugr.es"></a>
  * @version 1.0
  */
 public class MyOval2D extends Ellipse2D.Double implements MyShapes{
-
-   /**
-    * Creates a new <code>MyOval2D</code> instance.
-    *
-    */
    private double x1, x2, y1, y2;
    private Color fgcolor = Color.black;
    private Color bgcolor = Color.black;
@@ -37,11 +29,25 @@ public class MyOval2D extends Ellipse2D.Double implements MyShapes{
    private boolean filled = false, selected = false;
    private int tiporelleno, dirrelleno, trazo, grosor;
    private MyOval2D ovalSeleccion = null;
-   private int padding = 2;
+   private final int padding;
 
-   public MyOval2D() {}
+   /**
+    * Constructor por defecto.
+    */
+   public MyOval2D() {this.padding = 2;
+}
+   /**
+    * Constructor común, que crea una instancia <code>MyOval2D</code> a 
+    * partir de los valores recibidos como argumento.
+    * 
+    * @param x <code>double</code> coordenada x del punto.
+    * @param y <code>double</code> coordenada y del punto.
+    * @param w <code>double</code> ancho del círculo.
+    * @param h <code>double</code> alto del círculo.
+    */
    public MyOval2D(double x, double y, double w, double h) {
       super(x, y, w, h);
+      this.padding = 2;
       stroke = new BasicStroke(1.0f);
    }
 
@@ -82,7 +88,6 @@ public class MyOval2D extends Ellipse2D.Double implements MyShapes{
    public void update(Point p1, Point p2){
       setFrameFromDiagonal(p1, p2);
    }
-
    @Override
    public void move(Point p1, Point p2){
       double offset_x = p2.x - p1.x;
@@ -92,12 +97,7 @@ public class MyOval2D extends Ellipse2D.Double implements MyShapes{
                this.getWidth(), this.getHeight());
 
    }
-
-    /**
-     *
-     * @param g
-     */
-    @Override
+   @Override
    public void draw(Graphics2D g){
      // Comprobar trazo
       if (trazo == LienzoToolBar.DISCONTINUA)

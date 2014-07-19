@@ -9,6 +9,12 @@ package com.iris.imagen;
 import javax.swing.ButtonGroup;
 import javax.swing.ButtonModel;
 
+/**
+ * Clase que extiende a <code>ButtonGroup</code> impidiendo el borrado
+ * total de la selección de un botón.
+ * 
+ * @author Iris García <a href="mailto:irisgarcia@correo.ugr.es"></a>.
+ */
 public class MyButtonGroup extends ButtonGroup {
    @Override
    public void setSelected(ButtonModel model, boolean selected) {

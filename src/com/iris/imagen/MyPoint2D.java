@@ -15,28 +15,32 @@ import java.awt.geom.Ellipse2D;
 import java.awt.RenderingHints;
 
 /**
- * Describe class MyPoint2D here.
- *
- *
- * Created: Thu Apr  3 18:25:45 2014
+ * Clase que representa un punto, hereda el comportamiento de 
+ * <code>Ellipse2D.Double</code> e implementa la interfaz 
+ * <code>MyShapes</code>.
  *
  * @author Iris García <a href="mailto:irisgarcia@correo.ugr.es"></a>
  * @version 1.0
  */
 public class MyPoint2D extends Ellipse2D.Double implements MyShapes{
-
-   /**
-    * Creates a new <code>MyPoint2D</code> instance.
-    *
-    */
    private Color fgcolor = Color.black;
    private Color bgcolor = Color.black;
    private BasicStroke stroke;;
    private boolean filled = false, selected = false;
    private int tiporelleno, dirrelleno, trazo, grosor;
 
+   /** 
+    * Constructor por defecto.
+    */
    public MyPoint2D() {}
 
+   /**
+    * Constructor común, que crea un nuevo <code>MyPoint2D</code> a partir
+    * de las coordenadas recibidas como argumento.
+    * 
+    * @param x <code>double</code> coordenada x.
+    * @param y <code>double</code> coordenada y.
+    */
    public MyPoint2D(double x, double y) {
       super(x, y, 2, 2);
       stroke = new BasicStroke(1.0f);
@@ -77,13 +81,16 @@ public class MyPoint2D extends Ellipse2D.Double implements MyShapes{
    @Override
    public int getTrazo() { return trazo; }
    
+   @Override
    public void update(Point p1, Point p2){}
 
+   @Override
    public boolean contains(Point2D p1){
       Point2D tmp = new Point2D.Double(this.getX(), this.getY());
       return (p1.distance(tmp) <= stroke.getLineWidth()+2);
    }
 
+   @Override
    public void move(Point p1, Point p2){
       double offset_x = p2.x - p1.x;
       double offset_y = p2.y - p1.y;
@@ -93,6 +100,7 @@ public class MyPoint2D extends Ellipse2D.Double implements MyShapes{
 
    }
 
+   @Override
    public void draw(Graphics2D g){
       g.setColor(fgcolor);
       g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
@@ -115,7 +123,5 @@ public class MyPoint2D extends Ellipse2D.Double implements MyShapes{
         g.setColor(Color.darkGray);
         g.drawOval(x_fix - 2, y_fix - 2, grosor+2, grosor+2);
       }
-   }
-
-   
+   } 
 }
